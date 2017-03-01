@@ -13,9 +13,6 @@ import java.util.function.Supplier;
 import org.tinspin.index.RectangleEntryDist;
 
 /*
- * TODO: couldn't we take a distance-function which takes an Entry?
- *      Maybe our values are potatoes and not squares, and the distance calculation is a bit more complex.
- *      
  * TODO: performance, avoid iterators for arraylist
  * 
  * TODO: look at org.tinspin.index.rtree.RTree.findNodeEntry(double[], double[], boolean)
@@ -61,6 +58,10 @@ class RTreeMixedQuery<T> implements Iterator<RectangleEntryDist<T>> {
 
 	}
 	
+	/*
+	 * Subclass which holds a reference to the parent node for optimized support
+	 *  of the iterator.remove() Method.
+	 */
 	private static class RTreeEntryWrapper<T> extends RTreeNodeWrapper<T> {
 
 		int idx;
@@ -219,7 +220,7 @@ class RTreeMixedQuery<T> implements Iterator<RectangleEntryDist<T>> {
 	}
 
 	private void insert(Entry ent, RTreeNodeLeaf parent, int idx) {
-		if (!filter.matches(ent.min, ent.max)) {
+		if (!filter.matches(ent)) {
 			return;
 		}
 		assert isTreeNode(parent);

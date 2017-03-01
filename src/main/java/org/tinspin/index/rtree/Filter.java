@@ -1,5 +1,7 @@
 package org.tinspin.index.rtree;
 
+import org.tinspin.index.RectangleEntry;
+
 public interface Filter {
 	
 	/**
@@ -26,12 +28,11 @@ public interface Filter {
 	 * This is used on the actual entries. Anything that matches will be
 	 * returned.
 	 * 
-	 * @param min
-	 * @param max
-	 * @return
+	 * @param  entry  An entry with an existing value()
+	 * @return        True if this entry is part of the result set
 	 */
-	default boolean matches(double[] min, double[] max) {
-		return intersects(min, max);
+	default <T> boolean matches(RectangleEntry<T> entry) {
+		return intersects(entry.lower(), entry.upper());
 	}
 	
 	public static class RectangleIntersectFilter implements Filter {
