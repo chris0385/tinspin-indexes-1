@@ -46,7 +46,7 @@ public interface Filter {
 	 * @param  entry  An entry with an existing value()
 	 * @return        True if this entry is part of the result set
 	 */
-	default <T> boolean matches(RectangleEntry<T> entry) {
+	default boolean matches(RectangleEntry<?> entry) {
 		return intersects(entry.lower(), entry.upper());
 	}
 	

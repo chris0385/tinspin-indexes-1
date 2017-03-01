@@ -352,13 +352,7 @@ public class RTree<T> implements RectangleIndex<T> {
 	 * This methods returns an Iterable which returns the nodes by a combined range and nearest number search.
 	 * The Iterator supports the {@code remove()} method. 
 	 * 
-	 * 
-	 * Note: if you are not interested in the distance, defining {@code DistanceFunction::none() { return 0; }} is a very BAD idea.
-	 * The sorting algorithm relies on a PriorityQueue which would degenerate into a FIFO queue without appropriate distance function.
-	 * This would load a large part in the tree in the PriorityQueue.
-	 * What you need for a pure range query is a LIFO queue.
-	 * 
-	 * @param center       Target position
+	 * @param center       Target position passed as parameter to the distance functions. Can be {@code null} if your distance function supports it.
 	 * @param dist         Distance function used to compare entries (example: {@code DistanceFunction.EDGE} or {@code DistanceFunction.CENTER})
 	 * @param closestDist  Distance of the closest point in a given rectangle  (example: {@code DistanceFunction.EDGE})
 	 * @param filter       Filter to limit the results for range queries (example: {@code new Filter.RectangleIntersectFilter(min, max)})
