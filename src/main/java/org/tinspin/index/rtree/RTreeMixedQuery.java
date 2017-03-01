@@ -25,7 +25,7 @@ import org.tinspin.index.RectangleEntryDist;
 
 class RTreeMixedQuery<T> implements Iterator<RectangleEntryDist<T>> {
 	
-	private static class RTreeNodeWrapper<T> implements RectangleEntryDist<T> {
+	private static class RTreeNodeWrapper<T> implements RectangleEntryDist<T>, Comparable<RTreeNodeWrapper<T>> {
 
 		Entry<T> node;
 		double distance;
@@ -68,7 +68,7 @@ class RTreeMixedQuery<T> implements Iterator<RectangleEntryDist<T>> {
 		}
 		
 		/*
-		 * Special: two nodes are equal if they represent the same node
+		 * Two nodes are equal if they represent the same node.
 		 */
 		@Override
 		public boolean equals(Object obj) {
@@ -86,8 +86,14 @@ class RTreeMixedQuery<T> implements Iterator<RectangleEntryDist<T>> {
 				return false;
 			return true;
 		}
-		
-		
+
+		/*
+		 * For the PriorityQueue
+		 */
+		@Override
+		public int compareTo(RTreeNodeWrapper<T> o) {
+			return Double.compare(distance, o.dist());
+		}
 
 	}
 	
@@ -113,8 +119,7 @@ class RTreeMixedQuery<T> implements Iterator<RectangleEntryDist<T>> {
 	private final double[] center;
 	private final DistanceFunction dist;
 	private final DistanceFunction closestDist;
-	private final PriorityQueue<RTreeNodeWrapper<T>> queue = new PriorityQueue<>(
-			(o1, o2) -> Double.compare(o1.dist(), o2.dist()));
+	private final PriorityQueue<RTreeNodeWrapper<T>> queue = new PriorityQueue<>();
 	private final Filter filter;
 	private RTreeEntryWrapper<T> next;
 	private RTreeEntryWrapper<T> current;
@@ -267,13 +272,13 @@ class RTreeMixedQuery<T> implements Iterator<RectangleEntryDist<T>> {
 			pos = parent.getEntries().indexOf(toDelete);
 		}
 		if (pos == -1 || parent.getParent() == null) {
-			assert remove_pointerLoss++ > 0 || true : "Enabled by assert";
+			assert remove_pointerLoss++ > 0 || true : "Counting enabled by assert";
 			// lost pointer, need to look it up from the beginning
 			if (tree.remove(e.lower(), e.upper()) == null) {
 				throw new IllegalStateException("Node not found");
 			}
 		} else {
-			assert remove_hit++ > 0 || true : "Enabled by assert";
+			assert remove_hit++ > 0 || true : "Counting enabled by assert";
 			assert isTreeNode(parent);
 			tree.deleteFromNode(parent, pos);
 		}
@@ -340,8 +345,7 @@ class RTreeMixedQuery<T> implements Iterator<RectangleEntryDist<T>> {
 					// TODO: does this happens at most one time?
 					// if so, we don't need a list but we can exit right here
 					iterator.remove();
-					RTreeNode<T> node1 = (RTreeNode<T>) node;
-					toReinsert.add(new RTreeNodeWrapper<>(node1, closestDist.dist(center, node1.min, node1.max)));
+					toReinsert.add(new RTreeNodeWrapper<>(node, actualDist));
 				}
 			}
 		}
