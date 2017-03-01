@@ -1,3 +1,18 @@
+/*
+ * Copyright 2017 Christophe Schmaltz
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.tinspin.index.rtree;
 
 import java.util.ArrayList;
@@ -13,8 +28,6 @@ import java.util.function.Supplier;
 import org.tinspin.index.RectangleEntryDist;
 
 /*
- * TODO: performance, avoid iterators for arraylist
- * 
  * TODO: look at org.tinspin.index.rtree.RTree.findNodeEntry(double[], double[], boolean)
  *      -> correct logic becomes clear there
  */
@@ -98,6 +111,8 @@ class RTreeMixedQuery<T> implements Iterator<RectangleEntryDist<T>> {
 	 * This is only for the purpose of an optional validation
 	 */
 	private Set<RTreeNodeWrapper<T>> check_resizedInnerNodes;
+	private int remove_pointerLoss;
+	private int remove_hit;
 	{
 		testCode(() -> {
 			check_resizedInnerNodes = new HashSet<>();
@@ -277,7 +292,8 @@ class RTreeMixedQuery<T> implements Iterator<RectangleEntryDist<T>> {
 
 	@Override
 	public String toString() {
-		return "RTreeMixedQuery [queueSize=" + queueSize() + ", center=" + Arrays.toString(center) + ", dist=" + dist + "]";
+		return "RTreeMixedQuery [queueSize=" + queueSize() + ", rm.loss=" + remove_pointerLoss + ", rm.hit="
+				+ remove_hit + ", center=" + Arrays.toString(center) + ", dist=" + dist + "]";
 	}
 	
 	int queueSize() {
@@ -292,11 +308,17 @@ class RTreeMixedQuery<T> implements Iterator<RectangleEntryDist<T>> {
 			pos = parent.getEntries().indexOf(toDelete);
 		}
 		if (pos == -1 || parent.getParent() == null) {
+			testCode(() -> {
+				remove_pointerLoss++;
+			});
 			// lost pointer, need to look it up from the beginning
 			if (tree.remove(e.lower(), e.upper()) == null) {
 				throw new IllegalStateException("Node not found");
 			}
 		} else {
+			testCode(() -> {
+				remove_hit++;
+			});
 			assert isTreeNode(parent);
 			tree.deleteFromNode(parent, pos);
 		}
@@ -336,7 +358,7 @@ class RTreeMixedQuery<T> implements Iterator<RectangleEntryDist<T>> {
 	/**
 	 * <pre>
 	 * TODO: the iterator could register itself as listener for node modification at the tree.
-	 *  - When a node changes dimension, it notifies the tree which forwards to the liseners.
+	 *  - When a node changes dimension, it notifies the tree which forwards to the listeners.
 	 *  - It the distance was reduced, we add the node a second time in the queue.
 	 *  - We hold a set of nodes which are duplicated in the queue to be able to skip them when they appear for the second time.
 	 *  </pre> 

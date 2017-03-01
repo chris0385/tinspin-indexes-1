@@ -1,3 +1,18 @@
+/*
+ * Copyright 2017 Christophe Schmaltz
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.tinspin.index.rtree;
 
 import static org.junit.Assert.assertEquals;
@@ -124,6 +139,19 @@ public class RTreeMixedQueryTest {
 			Iterable<RectangleEntryDist<String>> q = tree.queryMixed(center, DistanceFunction.EDGE,
 					DistanceFunction.EDGE, Filter.ALL);
 			int cnt = 0;
+			if (false) {
+				/* 
+				 * A lot of the speedup is simply due to the copy. Adding this
+				 * makes the code 6,28 times slower for 12500 neighbors out of 100000.
+				 * 
+				 * Probably cache locality as my code is only faster for large results.
+				 * 
+				 * It seems as if executing the query multiple times is better than caching the results...
+				 */
+				List<RectangleEntryDist<String>> arr = new ArrayList<>();
+				q.forEach(arr::add);
+				q = arr;
+			}
 			for (Iterator<RectangleEntryDist<String>> iterator = q.iterator(); iterator.hasNext();) {
 				RectangleEntryDist<String> e = iterator.next();
 				assertNotNull(e);
@@ -135,16 +163,16 @@ public class RTreeMixedQueryTest {
 		
 		
 		
-		System.out.println("timeMixed=" + timeMixed + ", timeRef=" + timeRef);
+		System.out.println("timeMixed=" + timeMixed + ", timeRef=" + timeRef + " # " + (timeRef / (double)timeMixed));
 	}
 	
 	public long timeOf(Runnable run) {
-		final int nRuns = 2;
+		final int nRuns = 5;
 		long time = 0;
 		for (int i = 0; i <= nRuns; i++) {
-			long timeBefore = System.currentTimeMillis();
+			long timeBefore = System.nanoTime();
 			run.run();
-			long delta = System.currentTimeMillis() - timeBefore;
+			long delta = System.nanoTime() - timeBefore;
 			if (i > 0) {
 				// ignore the first one for warm up
 				time += delta;
