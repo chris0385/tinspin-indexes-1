@@ -50,25 +50,61 @@ public interface Filter {
 		return intersects(entry.lower(), entry.upper());
 	}
 	
+	/**
+	 * Rectangular region filter.
+	 */
 	public static class RectangleIntersectFilter implements Filter {
 
-		private final double[] min;
-		private final double[] max;
+		private final double[] lower;
+		private final double[] upper;
 
-		public RectangleIntersectFilter(double[] min, double[] max) {
-			this.min = min;
-			this.max = max;
+		public RectangleIntersectFilter(double[] lower, double[] upper) {
+			this.lower = lower;
+			this.upper = upper;
 		}
 
 		@Override
 		public boolean intersects(double[] min, double[] max) {
 			boolean inter = true;
 			for (int i = 0; i < min.length; i++) {
-				inter &= this.max[i] > min[i];
-				inter &= this.min[i] < max[i];
+				inter &= this.upper[i] > min[i];
+				inter &= this.lower[i] < max[i];
 			}
 			return inter;
 		}
 
 	}
+	
+	/**
+	 * Union of different "ranges".
+	 */
+	public static class UnionFilter implements Filter {
+		
+		private final Filter filter1;
+		private final Filter filter2;
+
+		public UnionFilter(Filter filter1, Filter filter2) {
+			this.filter1 = filter1;
+			this.filter2 = filter2;
+		}
+
+		@Override
+		public boolean intersects(double[] min, double[] max) {
+			return filter1.intersects(min, max) || filter2.intersects(min, max);
+		}
+		
+		@Override
+		public boolean matches(RectangleEntry<?> entry) {
+			return filter1.matches(entry) || filter2.matches(entry);
+		}
+		
+		/**
+		 * Chaining another filter.
+		 */
+		public UnionFilter union(Filter anotherFilter) {
+			return new UnionFilter(this, anotherFilter);
+		}
+		
+	}
+	
 }
