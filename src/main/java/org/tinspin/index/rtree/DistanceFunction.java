@@ -42,18 +42,18 @@ public interface DistanceFunction {
 	}
 	
 	/**
-	 * This class calculates the distance to a rectangular shaped object.
+	 * This class calculates the square distance to a rectangular shaped object.
 	 * 
 	 * This class completely ignores the center given as parameter to the interface.
 	 * 
 	 * TODO: maybe we could get rid of the center parameter altogether and always let the DistanceFunction
 	 *       hold it's reference points?
 	 */
-	public static class RectangleDist implements DistanceFunction {
+	public static class RectangleSquareDist implements DistanceFunction {
 		private final double[] lower;
 		private final double[] upper;
 
-		public RectangleDist(double[] lower, double[] upper) {
+		public RectangleSquareDist(double[] lower, double[] upper) {
 			this.lower = lower;
 			this.upper = upper;
 		}

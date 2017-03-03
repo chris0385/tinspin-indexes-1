@@ -353,7 +353,7 @@ public class RTree<T> implements RectangleIndex<T> {
 	 * The Iterator supports the {@code Iterator.remove()} method. 
 	 * 
 	 * @param center       Target position passed as parameter to the distance functions. 
-	 *                     Can be {@code null} if your distance function supports it (like {@code DistanceFunction.RectangleDist}).
+	 *                     Can be {@code null} if your distance function supports it (like {@code DistanceFunction.RectangleSquareDist}).
 	 * @param dist         Distance function used to compare entries (example: {@code DistanceFunction.EDGE} or {@code DistanceFunction.CENTER})
 	 * @param closestDist  Distance of the closest point in a given rectangle  (example: {@code DistanceFunction.EDGE} but *not* {@code DistanceFunction.CENTER})
 	 * @param filter       Filter to limit the results for range queries (example: {@code new Filter.RectangleIntersectFilter(min, max)})
