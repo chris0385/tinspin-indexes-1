@@ -69,18 +69,79 @@ public class RTreeMixedQueryTest {
 			nElements++;
 			maxQueueSize = Math.max(maxQueueSize, ((RTreeMixedQuery) iterator).queueSize());
 			
-			if (true) {
-				iterator.remove();
-				assertEquals(tree.size(), N_ELEMENTS - nElements);
-			}
+			// remove
+			iterator.remove();
+			assertEquals(tree.size(), N_ELEMENTS - nElements);
 		}
 
-		perfTestNN(tree);
 		System.out.println("maxQueueSize=" + maxQueueSize);
 		assertEquals("Test should be reproducible thanks to fixed seed", 12582, nElements);
 	}
+	
+	@Test
+	public void testRemovePerformance() {
+		RTree<String> tree = RTree.createRStar(3);
+		DistanceFunction dist = DistanceFunction.EDGE_SQUARE;
+		double[] center = new double[] { 1, 1, 1 };
+		int nEntries = 10000;
+		int k = tree.size() / 8;
+		long usingIteratorRemove = timeOf(() -> {
+			Iterable<RectangleEntryDist<String>> q = tree.queryRangedNearestNeighbor(center, dist, dist, Filter.ALL);
+			int cnt = 0;
+			for (Iterator<RectangleEntryDist<String>> iterator = q.iterator(); iterator.hasNext();) {
+				RectangleEntryDist<String> e = iterator.next();
+				assertNotNull(e);
+				iterator.remove();
+				cnt++;
+				if (cnt >= k)
+					break;
+			}
+		}, () -> {
+			tree.clear();
+			for (int i = 0; i < nEntries; i++) {
+				double[] position = randDouble(3);
+				tree.insert(position, "#" + i);
+			}
+		});
 
-	private void perfTestNN(RTree<String> tree) {
+		long usingListRemove = timeOf(() -> {
+			Iterable<RectangleEntryDist<String>> q = tree.queryRangedNearestNeighbor(center, dist, dist, Filter.ALL);
+			int cnt = 0;
+			List<RectangleEntryDist<String>> toRemove = new ArrayList<>();
+			for (Iterator<RectangleEntryDist<String>> iterator = q.iterator(); iterator.hasNext();) {
+				RectangleEntryDist<String> e = iterator.next();
+				assertNotNull(e);
+				toRemove.add(e);
+				cnt++;
+				if (cnt >= k)
+					break;
+			}
+			for (RectangleEntryDist<String> e : toRemove) {
+				tree.remove(e.lower(), e.upper());
+			}
+		}, () -> {
+			tree.clear();
+			for (int i = 0; i < nEntries; i++) {
+				double[] position = randDouble(3);
+				tree.insert(position, "#" + i);
+			}
+		});
+
+		System.out.println("usingIteratorRemove=" + usingIteratorRemove + ", usingListRemove=" + usingListRemove
+				+ " # speedup:" + (usingListRemove / (double) usingIteratorRemove));
+	}
+	
+	@Test
+	public void testQueryPerformance() {
+		RTree<String> tree = RTree.createRStar(3);
+		for (int i = 0; i < 100000; i++) {
+			double[] position = randDouble(3);
+			tree.insert(position, "#" + i);
+		}
+		performanceTestQueryNN(tree);
+	}
+
+	private double performanceTestQueryNN(RTree<String> tree) {
 		int k = tree.size() / 8;
 		double[] center = new double[] { 1, 1, 1 };
 		
@@ -142,9 +203,9 @@ public class RTreeMixedQueryTest {
 			}
 		});
 		
-		
-		
-		System.out.println("timeMixed=" + timeMixed + ", timeRef=" + timeRef + " # speedup:" + (timeRef / (double)timeMixed));
+		double speedup = timeRef / (double)timeMixed;
+		System.out.println("timeMixed=" + timeMixed + ", timeRef=" + timeRef + " # speedup:" + speedup);
+		return speedup;
 	}
 	
 	private void fillProcessorCache() {
@@ -156,9 +217,15 @@ public class RTreeMixedQueryTest {
 	}
 
 	public long timeOf(Runnable run) {
+		return timeOf(run, null);
+	}
+	public long timeOf(Runnable run, Runnable prepare) {
 		final int nRuns = 5;
 		long time = 0;
 		for (int i = 0; i <= nRuns; i++) {
+			if (prepare != null) {
+				prepare.run();
+			}
 			long timeBefore = System.nanoTime();
 			run.run();
 			long delta = System.nanoTime() - timeBefore;
