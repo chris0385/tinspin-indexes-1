@@ -203,13 +203,17 @@ public class RTree<T> implements RectangleIndex<T>, Serializable {
 		size = s.readInt();
 		Entry<T>[] entries = new Entry[size];
 		for (int i = 0; i < size; i++) {
+			T value = (T) s.readObject();
 			double[] keyMin = new double[dims];
 			double[] keyMax = new double[dims];
 			for (int d = 0; d < dims; d++) {
 				keyMin[d] = s.readDouble();
 				keyMax[d] = s.readDouble();
 			}
-			T value = (T) s.readObject();
+			if (Arrays.equals(keyMin, keyMax)) {
+				// use same reference if same content
+				keyMin = keyMax;
+			}
 			entries[i] = new Entry<T>(keyMin, keyMax, value);
 		}
 		load(entries);
@@ -221,12 +225,14 @@ public class RTree<T> implements RectangleIndex<T>, Serializable {
 		
 		s.writeInt(size);
 		for (RTreeIterator<T> it = iterator(); it.hasNext();) {
+			// Note: if subclasses of Entry were inserted, 
+			// only the Entry superclass will be recovered.
 			Entry<T> next = it.next();
+			s.writeObject(next.value());
 			for (int d = 0; d < dims; d++) {
 				s.writeDouble(next.min[d]);
 				s.writeDouble(next.max[d]);
 			}
-			s.writeObject(next.value());
 		}
 	}
 
