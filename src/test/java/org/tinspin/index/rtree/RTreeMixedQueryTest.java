@@ -79,6 +79,20 @@ public class RTreeMixedQueryTest {
 	}
 	
 	@Test
+	public void testDuplicates() {
+		RTree<String> tree = RTree.createRStar(3);
+		for (int i = 0; i < 10; i++) {
+			tree.insert(new double[] { 0, 0, 0 }, new double[] { 1, 1, 1 }, "#" + i);
+		}
+		Set<String> values=new HashSet<>();
+		for (RectangleEntryDist<String> e : tree.queryRangedNearestNeighbor(new double[] { 2, 1, 1 },
+				DistanceFunction.CENTER_SQUARE, DistanceFunction.EDGE_SQUARE, Filter.ALL)) {
+			values.add(e.value());
+		}
+		assertEquals(10, values.size());
+	}
+	
+	@Test
 	public void testRemovePerformance() {
 		RTree<String> tree = RTree.createRStar(3);
 		DistanceFunction dist = DistanceFunction.EDGE_SQUARE;
@@ -128,7 +142,7 @@ public class RTreeMixedQueryTest {
 		});
 
 		System.out.println("usingIteratorRemove=" + usingIteratorRemove + ", usingListRemove=" + usingListRemove
-				+ " # speedup:" + (usingListRemove / (double) usingIteratorRemove));
+				+ " # slowdown:" + 1./(usingListRemove / (double) usingIteratorRemove));
 	}
 	
 	@Test

@@ -195,7 +195,7 @@ public class RTree<T> implements RectangleIndex<T> {
 	}
 	
 
-	public Object remove(double[] point) {
+	public T remove(double[] point) {
 		//TODO speed up
 		return remove(point, point);
 	}
