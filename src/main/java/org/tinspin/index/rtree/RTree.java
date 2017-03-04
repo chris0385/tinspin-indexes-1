@@ -17,6 +17,7 @@
  */
 package org.tinspin.index.rtree;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -40,8 +41,9 @@ import org.tinspin.index.RectangleIndex;
  *
  * @param <T>
  */
-public class RTree<T> implements RectangleIndex<T> {
+public class RTree<T> implements RectangleIndex<T>, Serializable {
 
+	private static final long serialVersionUID = 388740767087944975L;
 	static final int NODE_MAX_DIR = 10;//56; //PAPER: M=56 for 1KB pages
 	static final int NODE_MAX_DATA = 10;//50; //PAPER: M=50 for 1KB pages
 	//PAPER: m = 20% of M
@@ -50,11 +52,11 @@ public class RTree<T> implements RectangleIndex<T> {
 	public static final boolean DEBUG = false;
 	
 	private final int dims;
-	private int size = 0;
+	private transient int size = 0;
 	//number of levels
-	private int depth;
-	private RTreeNode<T> root;
-	private int nNodes = 0;
+	private transient int depth;
+	private transient RTreeNode<T> root;
+	private transient int nNodes = 0;
 	
 	static RTreeLogic logic = new RStarTreeLogic();
 	
@@ -194,6 +196,39 @@ public class RTree<T> implements RectangleIndex<T> {
 		depth = bulkLoader.getDepth();
 	}
 	
+	private void readObject(final java.io.ObjectInputStream s) throws java.io.IOException, ClassNotFoundException {
+		// read dimensions
+		s.defaultReadObject();
+
+		size = s.readInt();
+		Entry<T>[] entries = new Entry[size];
+		for (int i = 0; i < size; i++) {
+			double[] keyMin = new double[dims];
+			double[] keyMax = new double[dims];
+			for (int d = 0; d < dims; d++) {
+				keyMin[d] = s.readDouble();
+				keyMax[d] = s.readDouble();
+			}
+			T value = (T) s.readObject();
+			entries[i] = new Entry<T>(keyMin, keyMax, value);
+		}
+		load(entries);
+	}
+
+	private void writeObject(java.io.ObjectOutputStream s) throws java.io.IOException {
+		// write dimension and any hidden fields
+		s.defaultWriteObject();
+		
+		s.writeInt(size);
+		for (RTreeIterator<T> it = iterator(); it.hasNext();) {
+			Entry<T> next = it.next();
+			for (int d = 0; d < dims; d++) {
+				s.writeDouble(next.min[d]);
+				s.writeDouble(next.max[d]);
+			}
+			s.writeObject(next.value());
+		}
+	}
 
 	public T remove(double[] point) {
 		//TODO speed up
