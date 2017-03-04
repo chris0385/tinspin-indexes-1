@@ -43,18 +43,20 @@ public class RTreeMixedQueryTest {
 	@Test
 	public void test() {
 		RTree<String> tree = RTree.createRStar(3);
-		
+
 		int N_ELEMENTS = 100000;
 		for (int i = 0; i < N_ELEMENTS; i++) {
 			double[] position = randDouble(3);
 			assert tree.queryExact(position, position) == null;
 			tree.insert(position, "#" + i);
 		}
-		
-		Iterable<RectangleEntryDist<String>> q = tree.queryRangedNearestNeighbor(new double[] { 1, 1, 1 }, DistanceFunction.CENTER_SQUARE, DistanceFunction.EDGE_SQUARE,
+
+		Iterable<RectangleEntryDist<String>> q = tree.queryRangedNearestNeighbor(
+				new double[] { 1, 1, 1 }, 
+				DistanceFunction.CENTER_SQUARE, DistanceFunction.EDGE_SQUARE,
 				new double[] { 0.5, 0.5, 0.5 }, new double[] { 1, 1, 1 });
-		
-		
+
+
 		double lastDistance = 0;
 		int maxQueueSize = 0;
 		int nElements = 0;
@@ -158,9 +160,10 @@ public class RTreeMixedQueryTest {
 	private double performanceTestQueryNN(RTree<String> tree) {
 		int k = tree.size() / 8;
 		double[] center = new double[] { 1, 1, 1 };
-		
+
 		{
-			Iterable<RectangleEntryDist<String>> q = tree.queryRangedNearestNeighbor(center, DistanceFunction.EDGE,
+			Iterable<RectangleEntryDist<String>> q = tree.queryRangedNearestNeighbor(
+					center, DistanceFunction.EDGE,
 					DistanceFunction.EDGE, Filter.ALL);
 			RTreeQueryKnn<String> res = tree.queryKNN(center, k, DistanceFunction.EDGE);
 			// test that we get the same results
@@ -175,9 +178,9 @@ public class RTreeMixedQueryTest {
 			}
 			assertFalse(res.hasNext());
 		}
-		
+
 		fillProcessorCache();
-		
+
 		long timeRef = timeOf(() -> {
 			RTreeQueryKnn<String> res = tree.queryKNN(center, k, DistanceFunction.EDGE);
 			int cnt = 0;
@@ -188,11 +191,12 @@ public class RTreeMixedQueryTest {
 			}
 			assertEquals(k, cnt);
 		});
-		
+
 		fillProcessorCache();
-		
+
 		long timeMixed = timeOf(() -> {
-			Iterable<RectangleEntryDist<String>> q = tree.queryRangedNearestNeighbor(center, DistanceFunction.EDGE,
+			Iterable<RectangleEntryDist<String>> q = tree.queryRangedNearestNeighbor(
+					center, DistanceFunction.EDGE,
 					DistanceFunction.EDGE, Filter.ALL);
 			int cnt = 0;
 			if (false) {
@@ -221,7 +225,7 @@ public class RTreeMixedQueryTest {
 		System.out.println("timeMixed=" + timeMixed + ", timeRef=" + timeRef + " # speedup:" + speedup);
 		return speedup;
 	}
-	
+
 	private void fillProcessorCache() {
 		// 20MB
 		int[] mem = new int[1024 * 1024 * 20];
